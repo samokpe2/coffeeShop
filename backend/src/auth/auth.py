@@ -1,30 +1,29 @@
+import os
 import json
-from flask import request, _request_ctx_stack
+from flask import request
 from functools import wraps
 from jose import jwt
 from urllib.request import urlopen
 
 
-AUTH0_DOMAIN = 'udacity-fsnd.auth0.com'
-ALGORITHMS = ['RS256']
-API_AUDIENCE = 'dev'
+AUTH0_DOMAIN = os.getenv('AUTH0_DOMAIN')
+ALGORITHMS = os.getenv('ALGORITHMS')
+API_AUDIENCE = os.getenv('API_AUDIENCE')
 
-## AuthError Exception
-'''
-AuthError Exception
-A standardized way to communicate auth failure modes
-'''
+
 class AuthError(Exception):
+    '''AuthError Exception.
+
+    A standardized way to communicate authentication failure modes.
+    '''
     def __init__(self, error, status_code):
         self.error = error
         self.status_code = status_code
 
 
-## Auth Header
-
 def get_token_auth_header():
-    #raise Exception('Not Implemented')
     '''Checks for the correct authorization header
+
     Returns:
         str: The token string.
     '''
@@ -53,8 +52,10 @@ def get_token_auth_header():
     token = parts[1]
     return token
 
+
 def get_rsa_key(token):
     '''Checks jwks for an rsa key using a key ID in the token header.
+
     Args:
         token (str):  The token string
     Returns:
@@ -67,6 +68,7 @@ def get_rsa_key(token):
         unverified_header = jwt.get_unverified_header(token)
         rsa_key = {}
         if 'kid' not in unverified_header:
+            print("Hii")
             raise AuthError({
                 'code': 'invalid_header',
                 'description': '"kid" missing from token header.'
@@ -94,32 +96,9 @@ def get_rsa_key(token):
             }, 401)
 
 
-def check_permissions(permission, payload):
-    #raise Exception('Not Implemented')
-    '''Checks whether the token payload contains the required permissions.
-    Args:
-        permission (str):  The permission string
-        payload (dict): The JWT payload
-    Returns:
-        bool: True if successfull.
-    '''
-    if 'permissions' not in payload:
-        raise AuthError({
-            'code': 'invalid_claims',
-            'description': 'Permissions not included in JWT'
-        }, 400)
-    if permission not in payload['permissions']:
-        raise AuthError({
-            'code': 'forbidden',
-            'description': 'Permission not found'
-        }, 403)
-    return True
-
-
-
 def verify_decode_jwt(token):
-    #raise Exception('Not Implemented')
-        '''Verifies and decodes the JWT token.
+    '''Verifies and decodes the JWT token.
+
     Args:
         token (str):  The token string
     Returns:
@@ -153,11 +132,34 @@ def verify_decode_jwt(token):
         }, 400)
 
 
+def check_permissions(permission, payload):
+    '''Checks whether the token payload contains the required permissions.
+
+    Args:
+        permission (str):  The permission string
+        payload (dict): The JWT payload
+    Returns:
+        bool: True if successfull.
+    '''
+    if 'permissions' not in payload:
+        raise AuthError({
+            'code': 'invalid_claims',
+            'description': 'Permissions not included in JWT'
+        }, 400)
+    if permission not in payload['permissions']:
+        raise AuthError({
+            'code': 'forbidden',
+            'description': 'Permission not found'
+        }, 403)
+    return True
+
+
 def requires_auth(permission=''):
     '''Implements authentication and authorization.
 
     Checks whether a request is from an authenticated user and
     whether the user is permitted to access the requested resource.
+
     Args:
         permission (str):  The permission string
     Returns:
@@ -169,7 +171,6 @@ def requires_auth(permission=''):
             token = get_token_auth_header()
             payload = verify_decode_jwt(token)
             check_permissions(permission, payload)
-            return f(payload, *args, **kwargs)
-
+            return f(*args, **kwargs)
         return wrapper
     return requires_auth_decorator
